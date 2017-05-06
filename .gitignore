@@ -1,2 +1,6 @@
+.DS_Store
+*.pyc
 include/*
+include_old/*
+include_old_old/*
 varmatmul/*.tns
