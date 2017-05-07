@@ -115,7 +115,10 @@ class VarMatmulOp : public OpKernel {
   }
 
   void Compute(OpKernelContext* context) override {
+    taco::util::TimeResults tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7;
     // Grab the input tensor
+    taco::util::Timer timer0;
+    timer0.start();
     const Tensor& input_tensor_a = context->input(0);
     auto sparse_m = input_tensor_a.matrix<double>();
     const Tensor& input_tensor_b = context->input(1);
@@ -130,11 +133,13 @@ class VarMatmulOp : public OpKernel {
     OP_REQUIRES_OK(context, context->allocate_output(0, output_shape,
                                                      &output_tensor));
     auto output = output_tensor->flat<double>();
+    timer0.stop();
+    tr0 = timer0.getResult();
 
 
 
     ////////////////////////////// TACO STUFF //////////////////////////////////
-    taco::util::Timer timer;
+    // taco::util::Timer timer;
 
     // Make the needed formats
     std::vector<taco::LevelType> fmts_list;
@@ -150,17 +155,22 @@ class VarMatmulOp : public OpKernel {
 
     taco::Tensor<double> result_tensor;
 
-    taco::util::TimeResults tr1, tr2, tr3, tr4, tr5;
 
     // std::cout << "tns_file_ =  " << tns_file_ << std::endl;
     if (tns_file_ == "") {
+        taco::util::Timer timer1;
+        timer1.start();
         taco::Tensor<double> a({(int)v.size()},   dv);
         taco::Tensor<double> B({(int)input_tensor_a.shape().dim_size(0),
                        (int)input_tensor_a.shape().dim_size(1)},
                        sp_mtx_fmt_to_use);
         taco::Tensor<double> c({(int)v.size()},   dv);
+        timer1.stop();
+        tr1 = timer1.getResult();
         // FOR SPMV USAGE
         // Populate the sparse matrix
+        taco::util::Timer timer2;
+        timer2.start();
         for (int r = 0; r < input_tensor_a.shape().dim_size(0); r++) {
           for (int c = 0; c < input_tensor_a.shape().dim_size(1); c++) {
             if (sparse_m(r, c) != 0) {
@@ -175,10 +185,14 @@ class VarMatmulOp : public OpKernel {
             c.insert(i, v(i));
           }
         }
+        timer2.stop();
+        tr2 = timer2.getResult();
 
         // Pack data as described by the formats
-        B.pack();
-        c.pack();
+        TACO_TIME_REPEAT(B.pack(), 1, tr3)
+        // B.pack();
+        TACO_TIME_REPEAT(c.pack(), 1, tr4)
+        // c.pack();
 
         // Form a tensor-vector multiplication expression
         taco::Var i, j(taco::Var::Sum);
@@ -187,34 +201,35 @@ class VarMatmulOp : public OpKernel {
         result_tensor = a;
     } else {
         // FOR TNS FILE USAGE
-        std::cout << "Trying to load tns_file_ =  " << tns_file_ << std::endl;
-        timer = taco::util::Timer();
-        timer.start();
+        // std::cout << "Trying to load tns_file_ =  " << tns_file_ << std::endl;
+        taco::util::Timer timer1;
+        timer1.start();
         taco::TensorBase T = taco::io::tns::readTensor(tns_file_, "Tensor");
-        std::cout << "FINISHED loading the tns_file_ =  " << tns_file_ << std::endl;
-        timer.stop();
+        // std::cout << "FINISHED loading the tns_file_ =  " << tns_file_ << std::endl;
+        timer1.stop();
+        tr1 = timer1.getResult();
         T.setFormat(sp_mtx_fmt_to_use);
 
         // Make the Dense Vector
         int vector_length = T.getDimensions()[T.getOrder() - 1];
-        std::cout << "vector length = " << vector_length << std::endl;
+        // std::cout << "vector length = " << vector_length << std::endl;
         taco::Tensor<double> c({vector_length},   dv);
         taco::util::FillMethod fM = strToFill(v_fmt_str_);
         taco::util::fillTensor(c, fM);
 
         // Make Iteration Variables
-        std::cout << "making a_vars" << std::endl;
+        // std::cout << "making a_vars" << std::endl;
         std::vector<taco::Var> a_vars;
         for (int i = 0; i < T.getOrder() - 1; i++) {
             a_vars.push_back(taco::Var());
         }
 
-        std::cout << "making b_vars" << std::endl;
+        // std::cout << "making b_vars" << std::endl;
         std::vector<taco::Var> B_Vars;
         B_Vars.insert(B_Vars.end(), a_vars.begin(), a_vars.end());
         B_Vars.push_back(taco::Var(taco::Var::Sum));
 
-        std::cout << "making c_vars" << std::endl;
+        // std::cout << "making c_vars" << std::endl;
         std::vector<taco::Var> c_Vars;
         c_Vars.push_back(B_Vars[B_Vars.size()-1]);
 
@@ -222,56 +237,56 @@ class VarMatmulOp : public OpKernel {
         std::vector<int> T_dims = T.getDimensions();
         std::vector<int> A_dims;
         A_dims.insert(A_dims.end(), T_dims.begin(), T_dims.end()-1);
-        std::cout << "A_dims has length = " << A_dims.size() << "T_dims has length = " << T_dims.size() << std::endl;
+        // std::cout << "A_dims has length = " << A_dims.size() << "T_dims has length = " << T_dims.size() << std::endl;
 
         // Get Format of A from format of T
         std::vector<taco::LevelType> A_fmts_list;
         A_fmts_list.insert(A_fmts_list.end(), fmts_list.begin(), fmts_list.end()-1);
-        std::cout << "A_fmts_list is " << A_fmts_list.size() << " long" << std::endl;
+        // std::cout << "A_fmts_list is " << A_fmts_list.size() << " long" << std::endl;
         taco::Format result_fmt_to_use(A_fmts_list);
 
         // Create the result tensor
         taco::Tensor<double> A(A_dims, result_fmt_to_use);
 
         // Pack data as described by the formats
-        std::cout << "packing c" << std::endl;
-        TACO_TIME_REPEAT(T.pack(), 1, tr1)
-        std::cout << "packing T took " << tr1 << std::endl;
+        // std::cout << "packing c" << std::endl;
+        TACO_TIME_REPEAT(T.pack(), 1, tr3)
+        // std::cout << "packing T took " << tr1 << std::endl;
 
-        std::cout << "packing c" << std::endl;
-        TACO_TIME_REPEAT(c.pack(), 1, tr2)
-        std::cout << "packing c took " << tr2 << std::endl;
+        // std::cout << "packing c" << std::endl;
+        TACO_TIME_REPEAT(c.pack(), 1, tr4)
+        // std::cout << "packing c took " << tr2 << std::endl;
 
         // Use the final expression
-        std::cout << "setting up expression" << std::endl;
+        // std::cout << "setting up expression" << std::endl;
         A(a_vars) = taco::Read(T,B_Vars) * c(c_Vars); 
 
         result_tensor = A;
 
-        // print out the fmts
-        for (auto ds : {a_vars, B_Vars, c_Vars}) {
-            std::cout << "(" << taco::util::join(ds) << "), ";
-        }
+        // // print out the fmts
+        // for (auto ds : {a_vars, B_Vars, c_Vars}) {
+        //     std::cout << "(" << taco::util::join(ds) << "), ";
+        // }
 
-        // print out the dimenions
-        for (auto ds : {A.getDimensions(), T.getDimensions(), c.getDimensions()}) {
-            std::cout << "(" << taco::util::join(ds) << "), ";
-        }
+        // // print out the dimenions
+        // for (auto ds : {A.getDimensions(), T.getDimensions(), c.getDimensions()}) {
+        //     std::cout << "(" << taco::util::join(ds) << "), ";
+        // }
     }
 
     // Compile the expression
-    std::cout << "compiling" << std::endl;
-    TACO_TIME_REPEAT(result_tensor.compile(), 1, tr3)
-    std::cout << "compile took " << tr3 << std::endl;
+    // std::cout << "compiling" << std::endl;
+    TACO_TIME_REPEAT(result_tensor.compile(), 1, tr5)
+    // std::cout << "compile took " << tr3 << std::endl;
 
     // Assemble A's indices and numerically compute the result
-    std::cout << "assembling" << std::endl;
-    TACO_TIME_REPEAT(result_tensor.assemble(), 1, tr4)
-    std::cout << "assemble took " << tr4 << std::endl;
+    // std::cout << "assembling" << std::endl;
+    TACO_TIME_REPEAT(result_tensor.assemble(), 1, tr6)
+    // std::cout << "assemble took " << tr4 << std::endl;
 
-    std::cout << "computing" << std::endl;
-    TACO_TIME_REPEAT(result_tensor.compute(), 1, tr5)
-    std::cout << "compute took " << tr5 << std::endl;
+    // std::cout << "computing" << std::endl;
+    TACO_TIME_REPEAT(result_tensor.compute(), 1, tr7)
+    // std::cout << "compute took " << tr5 << std::endl;
 
     double* output_vals = result_tensor.getStorage().getValues();
     size_t nvals = weights_shape.dim_size(0);
@@ -279,7 +294,13 @@ class VarMatmulOp : public OpKernel {
       output(i) = output_vals[i];
     }
 
-    std::cout << tr1 << ", " << tr2 << ", " << tr3 << ", " << tr4 << ", " << tr5  << std::endl;
+    for (auto tr : {tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7}) {
+        std::cout << tr.mean << ", ";
+    }
+    // vector<double> times = {tr0.mean, tr1.mean, tr2.mean, tr3.mean, tr4.mean, tr5.mean, tr6.mean, tr7.mean};
+    // std::cout << taco::util::join(times);
+    // std::cout << std::endl;
+    // std::cout << tr0.mean << ", " << tr1.mean << ", " << tr2.mean << ", " << tr3.mean << ", " << tr4.mean << ", " << tr5.mean  << std::endl;
   }
 };
 

@@ -41,20 +41,40 @@ def main(use_mymatmul):
   t0 = time.clock()
   # Create the model
   x = tf.placeholder(tf.float32, [None, 784])
+  x = tf.Print(x, [tf.shape(x)], "x")
   W = tf.Variable(tf.zeros([784, 10]))
+  W = tf.Print(W, [tf.shape(W)], "W")
   b = tf.Variable(tf.zeros([10]))
+  b = tf.Print(b, [tf.shape(b)], "b")
+  Wt = tf.transpose(W) # 10 x 784
+  Wt = tf.Print(Wt, [tf.shape(Wt)], "Wt")
+  print(Wt.get_shape())
+  xt = tf.transpose(x) # 784 x None
+  xt = tf.Print(xt, [tf.shape(xt)], "xt")
+  print(xt.get_shape())
   if use_mymatmul:
     print("Using MyMatmul\n")
-    x = tf.cast(x, tf.float64)
-    W = tf.cast(W, tf.float64)
+    xt = tf.cast(xt, tf.float64)
+    Wt = tf.cast(Wt, tf.float64)
     b = tf.cast(b, tf.float64)
-    y = mymatmul_module.my_matmul(x, W) + b
+    
+    prodt = mymatmul_module.my_matmul(Wt, xt) # 10 x None
+    prodt = tf.Print(prodt, [tf.shape(prodt)], "prodt")
+    y = tf.transpose(prodt) + b 
+    y = tf.Print(y, [tf.shape(y)], "y")
+    print("mymatmul y: " + str(y.get_shape()))
+    # y = tf.matmul(x, W) + b
   else:
     print("NOT Using MyMatmul\n")
-    y = tf.matmul(x, W) + b
+    prodt = tf.matmul(Wt, xt) # 10 x None
+    y = tf.transpose(prodt) + b
+    y = tf.Print(y, [tf.shape(y)], "y")
+    print("tf y: " + str(y.get_shape()))
 
   # Define loss and optimizer
   y_ = tf.placeholder(tf.float32, [None, 10])
+  y_ = tf.Print(y_, [tf.shape(y_)], "y_")
+  print("y_: " + str(y_.get_shape()))
 
   # The raw formulation of cross-entropy,
   #
@@ -77,6 +97,7 @@ def main(use_mymatmul):
   print("between start and training: {}".format(t1 - t0))
   for _ in range(1000):
     batch_xs, batch_ys = mnist.train.next_batch(100)
+    print("batch_xs.shape: ", batch_xs.shape, "batch_ys.shape: ", batch_ys.shape)
     sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys})
   t2 = time.clock()
   print("Total Train Time:           {}".format(t2 - t1))

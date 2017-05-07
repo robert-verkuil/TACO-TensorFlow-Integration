@@ -10,7 +10,7 @@ from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import sparse_ops
 mymatmul_grad_module = tf.load_op_library('/home/ubuntu/tensorflow/bazel-bin/tensorflow/core/user_ops/mymatmul_grad.so')
 
-# @ops.RegisterGradient("MyMatmul")
+@ops.RegisterGradient("MyMatmul")
 def _mymatmul_grad_cc(op, grad):
     """
     The gradient for `inner_product` using the operation implemented in C++.
@@ -25,7 +25,7 @@ def _mymatmul_grad_cc(op, grad):
 
 # uncomment this and comment the corresponding line above to use the Python
 # implementation of the inner product gradient
-@ops.RegisterGradient("MyMatmul")
+# @ops.RegisterGradient("MyMatmul")
 def _mymatmul_grad(op, grad):
     """
     The gradients for `inner_product`.
