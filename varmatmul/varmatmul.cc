@@ -31,6 +31,7 @@ For sparse_fmt parameter
 // Otherwise load the tns from filename and multiply by a 
 // randomly taco-generated vector.
 
+// namespace shape_inference {
 REGISTER_OP("VarMatmul")
     .Input("sparse_m: double")
     .Input("v: double")
@@ -38,9 +39,34 @@ REGISTER_OP("VarMatmul")
     .Attr("tns_file: string = \"\"")
     .Attr("v_fmt_str: string = \"\"")
     .Output("result: double")
+    .Output("times: double")
     .Attr("transpose_a: bool = false")
     .Attr("transpose_b: bool = false")
-    .SetShapeFn(::tensorflow::shape_inference::MatMulShape);
+    // .SetShapeFn(::tensorflow::shape_inference::MatMulShape);
+    .SetShapeFn([](::tensorflow::shape_inference::InferenceContext* c) {
+        ::tensorflow::shape_inference::ShapeHandle a;
+        TF_RETURN_IF_ERROR(c->WithRank(c->input(0), 2, &a));
+
+        ::tensorflow::shape_inference::ShapeHandle b;
+        TF_RETURN_IF_ERROR(c->WithRank(c->input(1), 2, &b));
+
+        bool transpose_a, transpose_b;
+        TF_RETURN_IF_ERROR(c->GetAttr("transpose_a", &transpose_a));
+        TF_RETURN_IF_ERROR(c->GetAttr("transpose_b", &transpose_b));
+        ::tensorflow::shape_inference::DimensionHandle output_rows = transpose_a ? c->Dim(a, 1) : c->Dim(a, 0);
+        ::tensorflow::shape_inference::DimensionHandle output_cols = transpose_b ? c->Dim(b, 0) : c->Dim(b, 1);
+
+        // Validate that the inner shapes are compatible.
+        ::tensorflow::shape_inference::DimensionHandle inner_a = transpose_a ? c->Dim(a, 0) : c->Dim(a, 1);
+        ::tensorflow::shape_inference::DimensionHandle inner_b = transpose_b ? c->Dim(b, 1) : c->Dim(b, 0);
+        ::tensorflow::shape_inference::DimensionHandle merged;
+        TF_RETURN_IF_ERROR(c->Merge(inner_a, inner_b, &merged));
+
+        c->set_output(0, c->Matrix(output_rows, output_cols));
+        c->set_output(1, c->Matrix(1, 100));
+        return Status::OK();
+    });
+// }
 
 class VarMatmulOp : public OpKernel {
  private:
@@ -135,6 +161,16 @@ class VarMatmulOp : public OpKernel {
     auto output = output_tensor->flat<double>();
     timer0.stop();
     tr0 = timer0.getResult();
+
+
+    // Create an output tensor of gathered times
+    Tensor* time_output_tensor = NULL;
+    TensorShape time_output_shape;
+    time_output_shape.AddDim(100);
+    time_output_shape.AddDim(1);
+    OP_REQUIRES_OK(context, context->allocate_output(1, time_output_shape,
+                                                 &time_output_tensor));
+    auto time_output = time_output_tensor->flat<double>();
 
 
 
@@ -294,13 +330,11 @@ class VarMatmulOp : public OpKernel {
       output(i) = output_vals[i];
     }
 
+    int counter = 0;
     for (auto tr : {tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7}) {
-        std::cout << tr.mean << ", ";
+        // std::cout << tr.mean << ", ";
+        time_output(counter++) = tr.mean;
     }
-    // vector<double> times = {tr0.mean, tr1.mean, tr2.mean, tr3.mean, tr4.mean, tr5.mean, tr6.mean, tr7.mean};
-    // std::cout << taco::util::join(times);
-    // std::cout << std::endl;
-    // std::cout << tr0.mean << ", " << tr1.mean << ", " << tr2.mean << ", " << tr3.mean << ", " << tr4.mean << ", " << tr5.mean  << std::endl;
   }
 };
 
