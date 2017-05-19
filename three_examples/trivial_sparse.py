@@ -129,6 +129,38 @@ def tf_sparse_matmul_func4(coords_, values_, dense_shape_, v_):
         result = sess.run(ret, feed_dict={indices: coords_, values: values_, dense_shape: dense_shape_, v:v_})
         return result
 
+def tf_sparse_matmul_func5(coords_, values_, dense_shape_, v_):
+
+    # print("memory usage = {}".format(len(coords_)*2*4+len(values_)*1*8+len(v_)*8))
+
+    # put stuff into a sparsetensor
+    start = time.time()
+    sess = tf.Session('')
+    with sess:
+        indices = tf.placeholder(tf.int64, [None, 2])
+        values = tf.placeholder(tf.double, [None])
+        dense_shape = tf.placeholder(tf.int64, [2,])
+        v = tf.placeholder(tf.double, [None, 1])
+
+        # for i in range(3):
+        sparse_t_ = sess.run(tf.SparseTensor(indices=indices, values=values, dense_shape=dense_shape), 
+                        feed_dict={indices: coords_, values: values_, dense_shape: dense_shape_, v:v_})
+    
+        mid = time.time()
+            # print("loading iteration {} took {}".format(i, mid-start))
+            # start = mid
+
+
+        sparse_t = tf.sparse_placeholder(tf.float64)
+
+        # for i in range(3):
+        result = sess.run(tf.sparse_tensor_dense_matmul(sparse_t, v), 
+                        feed_dict={sparse_t: sparse_t_, v: v_})
+        end = time.time()
+            # print("loading iteration {} took {}".format(i, end-mid))
+            # mid = end
+        return result, mid
+
 def varmatmul_sparse_func(coords, values, dense_shape, v, sparse_fmt=[True, False]):
     # for sp_fmt in sparsity_format:
     sess = tf.Session('')
@@ -287,12 +319,13 @@ functions = {
     # "tf_sparse_matmul_func" : tf_sparse_matmul_func,
     # "tf_sparse_matmul_func2" : tf_sparse_matmul_func2,
     # "tf_sparse_matmul_func3" : tf_sparse_matmul_func3,
-    "tf_sparse_matmul_func4" : tf_sparse_matmul_func4,
+    # "tf_sparse_matmul_func4" : tf_sparse_matmul_func4,
+    "tf_sparse_matmul_func5" : tf_sparse_matmul_func5,
 
     # Category: my stuff
     # "varmatmul_sparse_func" : varmatmul_sparse_func,
     # "varmatmul_sparse_func2" : varmatmul_sparse_func2,
-    "split_func2" : split_func2,
+    # "split_func2" : split_func2,
 # "my_noop_func" : my_noop_func,
 
     # Category: split stuff
@@ -370,7 +403,7 @@ def run_one_test(fname, m, n, sparsity, sparse_pattern, check, sparse_fmt_name):
         result, times, mid, memory_usage = f(coords, vals, dense_shape, v, sparse_fmt)
         # print("finished test")
     else:
-        result = f(coords, vals, dense_shape, v)
+        result, mid = f(coords, vals, dense_shape, v)
     after_computation = time.time()
 
 
@@ -396,8 +429,8 @@ def run_one_test(fname, m, n, sparsity, sparse_pattern, check, sparse_fmt_name):
     else:
         print(", "*16, end='')
         print("{}, ".format(sparse_fmt_name), end="")
-        print("{}, ".format(after_computation-after_generation), end="")
-        print("{}, ".format(0), end="")
+        print("{}, ".format(mid-after_generation), end="")
+        print("{}, ".format(after_computation-mid), end="")
         memory_usage = len(coords)*2*4+len(vals)*1*8+len(v)*8
         print("{}".format(memory_usage), end="\n")
 
