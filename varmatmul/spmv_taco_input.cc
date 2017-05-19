@@ -185,7 +185,7 @@ class SpmvTacoInputOp : public OpKernel {
     const int* level_index1_raw = level_index1.data();
     const double* values_raw = values.data();
     // const int* sizes_raw = sizes.data();
-    // const double* v_raw = v.data();
+    const double* v_raw = v.data();
 
 
     Tensor* output_tensor = NULL;
@@ -257,12 +257,13 @@ class SpmvTacoInputOp : public OpKernel {
     // std::cout << B.getStorage().getLevelIndex(1).ptr << ", " << B.getStorage().getLevelIndex(1).idx << std::endl;
 
     // // // Populate the vector
-    const int N = v.size();
-    for (int i = 0; i < N; i++) {
-      if (v(i) != 0) {
-        c.insert(i, v(i));
-      }
-    }
+    // const int N = v.size();
+    // for (int i = 0; i < N; i++) {
+    //   if (v(i) != 0) {
+    //     c.insert(i, v(i));
+    //   }
+    // }
+    c.setDense((double*)v_raw);
 
     timer2.stop();
     tr2 = timer2.getResult();
@@ -271,7 +272,8 @@ class SpmvTacoInputOp : public OpKernel {
     // std::cout << "packing B" << std::endl;
     // TACO_TIME_REPEAT(B.pack(), 1, tr3)
     // std::cout << "packing c" << std::endl;
-    TACO_TIME_REPEAT(c.pack(), 1, tr4)
+    // TACO_TIME_REPEAT(c.pack(), 1, tr4)
+    std::cout << c << std::endl;
 
     // // Form a tensor-vector multiplication expression
     // std::cout << "setting up index expression" << std::endl;

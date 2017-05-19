@@ -10,8 +10,10 @@ spmv_taco_input_module = tf.load_op_library('/home/ubuntu/tensorflow/bazel-bin/t
 
 sess = tf.Session('')
 with sess:
-    a = [[1,2],[3,4]]
-    b = [[1],[2]]
+    # a = [[1,2],[3,4]]
+    # b = [[1],[2]]
+    a = np.random.randint(5, size=(100, 100))
+    b = np.random.randint(5, size=(100, 1))
     a = np.array(a).astype(np.float64)
     b = np.array(b).astype(np.float64)
 
@@ -35,10 +37,11 @@ with sess:
     # print "1:  ", o1, "2: ", o2, "3: ", o3, "4: ", o4, "b: ", b
     # print times[:10]
     result_, times2_ = spmv_taco_input_module.spmv_taco_input(o1, o2, o3, o4, b, sparse_fmt=[True, False])
-    result, times, times2 = sess.run([result_, times_, times2_])
-    print result, times, times2
+    result2, times, times2 = sess.run([result_, times_, times2_])
+    print result2, times, times2
     # result, times = sess.run(varmatmul_sparse_module.var_matmul_sparse(indices, values, dense_shape, b, sparse_fmt=[True, False]))
     
+    np.testing.assert_array_equal(result, result2)
 
 
 
