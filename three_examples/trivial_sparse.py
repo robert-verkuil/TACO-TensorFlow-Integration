@@ -11,6 +11,9 @@ varmatmul_module = tf.load_op_library('/home/ubuntu/tensorflow_with_debug/bazel-
 varmatmul_sparse_module = tf.load_op_library('/home/ubuntu/tensorflow_with_debug/bazel-bin/tensorflow/core/user_ops/varmatmul_sparse.so')
 noop_module = tf.load_op_library('/home/ubuntu/tensorflow_with_debug/bazel-bin/tensorflow/core/user_ops/noop.so')
 
+loader_module = tf.load_op_library('/home/ubuntu/tensorflow/bazel-bin/tensorflow/core/user_ops/loader.so')
+spmv_taco_input_module = tf.load_op_library('/home/ubuntu/tensorflow/bazel-bin/tensorflow/core/user_ops/spmv_taco_input.so')
+
 
 
 #########################################################################
@@ -122,14 +125,14 @@ def tf_sparse_matmul_func4(coords_, values_, dense_shape_, v_):
         result = sess.run(ret, feed_dict={indices: coords_, values: values_, dense_shape: dense_shape_, v:v_})
         return result
 
-def varmatmul_sparse_func(coords, values, dense_shape, v, sparse_fmt=[True, True]):
+def varmatmul_sparse_func(coords, values, dense_shape, v, sparse_fmt=[True, False]):
     # for sp_fmt in sparsity_format:
     sess = tf.Session('')
     with sess:
         result, times = sess.run(varmatmul_sparse_module.var_matmul_sparse(coords, values, dense_shape, v, sparse_fmt=sparse_fmt))
         return result, times
 
-def varmatmul_sparse_func2(coords_, values_, dense_shape_, v_, sparse_fmt_=[True, True]):
+def varmatmul_sparse_func2(coords_, values_, dense_shape_, v_, sparse_fmt_=[True, False]):
     # put stuff into a sparsetensor
 
     # for sp_fmt in sparsity_format:
@@ -146,6 +149,32 @@ def varmatmul_sparse_func2(coords_, values_, dense_shape_, v_, sparse_fmt_=[True
         ret = varmatmul_sparse_module.var_matmul_sparse(indices, values, dense_shape, v, sparse_fmt=[True, False])
         result, times = sess.run(ret, feed_dict={indices: coords_, values: values_, dense_shape: dense_shape_, v:v_})
         return result, times
+
+
+def split_func2(coords_, values_, dense_shape_, v_, sparse_fmt_=[True, False]):
+    # put stuff into a sparsetensor
+
+    # for sp_fmt in sparsity_format:
+    sess = tf.Session('')
+    with sess:
+        indices = tf.placeholder(tf.int64, [None, 2])
+        values = tf.placeholder(tf.double, [None])
+        dense_shape = tf.placeholder(tf.int64, [2,])
+        v = tf.placeholder(tf.double, [None, 1])
+        # sparse_fmt = tf.placeholder(tf.double, [1, 2])
+
+        # sparse_t = tf.SparseTensor(indices=indices, values=values, dense_shape=dense_shape)
+        # print("in function: ", sparse_fmt_)
+        o1, o2, o3, o4, t = loader_module.rob_loader(indices, values, dense_shape, v, sparse_fmt=[True, False])
+        # print("o1 ", o1, ",o2 ", o2, " ,o3 ", o3, " o4, ", o4, ", t ",t)
+        # o1_ = tf.Print(o1, [t], '', summarize=10)
+        r, t2 = spmv_taco_input_module.spmv_taco_input(o1, o2, o3, o4, v, sparse_fmt=[True, False])
+        result, times, times2 = sess.run([r, t, t2], feed_dict={indices: coords_, values: values_, dense_shape: dense_shape_, v:v_})
+        # print("loading times: ", times.flatten()[:8], "spmv_taco_input_processor: ", times2.flatten()[:8])
+        all_times = list(times.flatten()[:8]) + list(times2.flatten()[:8])
+        # print(all_times, len(all_times))
+        return result, all_times
+
 
 # def my_noop_func(sparse_m, v, sparse_fmt):
 #     # for sp_fmt in sparsity_format:
@@ -174,8 +203,12 @@ functions = {
 
     # Category: my stuff
     # "varmatmul_sparse_func" : varmatmul_sparse_func,
-    "varmatmul_sparse_func2" : varmatmul_sparse_func2,
+    # "varmatmul_sparse_func2" : varmatmul_sparse_func2,
+    "split_func2" : split_func2,
 # "my_noop_func" : my_noop_func,
+
+    # Category: split stuff
+
     }
 
 sizes = (
@@ -184,21 +217,21 @@ sizes = (
     # [100, 100],
     # [500, 500],
     # [1000,1000],
-    # [2000,2000],
-    [4000,4000],
-    # [10000, 10000],
+    [2000,2000],
+    # [4000,4000],
+    [10000, 10000],
     )
 
 # in the range [0,1]
 sparsities = (
         # 0.00001,
         0.01,
-        0.02,
-        0.03,
-        0.04,
-        0.05,
-        0.06,
-        0.07,
+        # 0.02,
+        # 0.03,
+        # 0.04,
+        # 0.05,
+        # 0.06,
+        # 0.07,
         # 0.1,
         # 0.15,
         # 0.2,
@@ -250,11 +283,16 @@ def run_one_test(fname, m, n, sparsity, sparse_pattern, check, sparse_fmt_name):
     after_computation = time.time()
 
     # We might need padding for the stuff spit out by the function
-    if "varmatmul_sparse_func" not in fname:
-        print(", "*8, end='')
-    else:
+    if ("varmatmul_sparse_func" in fname):
         for t in times.flatten()[:8]:
             print("{}, ".format(t), end='')
+        print(", "*8, end='')
+    elif ("split" in fname):
+        print(len(times))
+        for t in times[:16]:
+            print("{}, ".format(t), end='')
+    else:
+        print(", "*16, end='')
 
     print("{}".format(after_computation-after_generation), end="\n")
 
@@ -274,12 +312,14 @@ def call_run_one_test(options):
 # in jupyter on the local machine.
 def test_all(check):
     global gen_sparse_matrix
-    print("function_type, m, n, sparsity, sparsity_pattern, generation_time, TF_setup, tacotensor_init, tacotensor_insert, B_pack, c_pack, t_compile, t_assemble, t_compute, computation_time")
+    print("function_type, m, n, sparsity, sparsity_pattern, generation_time, ", end='')
+    print("TF_setup, tacotensor_init, tacotensor_insert, B_pack, c_pack, t_compile, t_assemble, t_compute, ", end='')
+    print("TF_setup2, tacotensor_init2, tacotensor_insert2, B_pack2, c_pack2, t_compile2, t_assemble2, t_compute2, computation_time")
     for fname, f in functions.iteritems():
         for (m, n) in sizes:
             for sparsity in sparsities:
                 for sparse_pattern in sparsity_pattern:
-                    if "varmatmul_sparse_func" in fname:
+                    if "varmatmul_sparse_func" in fname or "split" in fname:
                         for sparse_fmt_name, _ in sparsity_format.iteritems():
                             if sparse_fmt_name != -1:
                                 call_run_one_test([fname, m, n, sparsity, sparse_pattern, check, sparse_fmt_name])
@@ -299,7 +339,7 @@ if __name__ == '__main__':
         time.sleep(0.3)
         sys.stdout.flush()
     elif sys.argv[1] == "test_one":
-        print("about to call one test with args = ", *sys.argv[2:9])
+        # print("about to call one test with args = ", *sys.argv[2:9])
         fname           = sys.argv[2]
         m               = int(sys.argv[3])
         n               = int(sys.argv[4])

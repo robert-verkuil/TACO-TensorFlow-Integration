@@ -188,61 +188,6 @@ class SpmvTacoInputOp : public OpKernel {
     // const double* v_raw = v.data();
 
 
-
-// Check that the dimensions of the two matrices are valid.
-    // OP_REQUIRES(context, TensorShapeUtils::IsMatrix(v_->shape()),
-    //             errors::InvalidArgument("Tensor 'b' is not a matrix"));
-
-    // OP_REQUIRES(context, TensorShapeUtils::IsVector(a_shape_->shape()),
-    //             errors::InvalidArgument("Tensor 'a_shape' is not a vector"));
-
-    // OP_REQUIRES(
-    //     context, a_shape_->NumElements() == 2,
-    //     errors::InvalidArgument("Tensor 'a_shape' must have 2 elements"));
-
-    // OP_REQUIRES(context, TensorShapeUtils::IsVector(a_values_->shape()),
-    //             errors::InvalidArgument("Tensor 'a_values' is not a vector"));
-
-    // OP_REQUIRES(context, TensorShapeUtils::IsMatrix(a_indices_->shape()),
-    //             errors::InvalidArgument("Tensor 'a_indices' is not a matrix"));
-
-    // OP_REQUIRES(context, a_indices_->shape().dim_size(0) == a_values_->NumElements(),
-    //             errors::InvalidArgument("Number of rows of a_indices does not "
-    //                                     "match number of entries in a_values"));
-
-    // OP_REQUIRES(
-    //     context, a_indices_->shape().dim_size(1) == a_shape_->NumElements(),
-    //     errors::InvalidArgument("Number of columns of a_indices does not match "
-    //                             "number of entries in a_shape"));
-
-    // auto a_shape_t = a_shape_->vec<int64>();
-    // const int64 outer_left = a_shape_t(0);
-    // const int64 outer_right = v_->shape().dim_size(1);
-    // const int64 inner_left = a_shape_t(1);
-    // const int64 inner_right = v_->shape().dim_size(0);
-
-    // OP_REQUIRES(
-    //     context, inner_right == inner_left,
-    //     errors::InvalidArgument(
-    //         "Cannot multiply A and B because inner dimension does not match: ",
-    //         inner_left, " vs. ", inner_right,
-    //         ".  Did you forget a transpose?  "
-    //         "Dimensions of A: [",
-    //         a_shape_t(0), ", ", a_shape_t(1), ").  Dimensions of B: ",
-    //         v_->shape().DebugString()));
-
-    // TensorShape out_shape({outer_left, outer_right});
-    // Tensor* out = nullptr;
-    // OP_REQUIRES_OK(context, context->allocate_output(0, out_shape, &out));
-
-
-
-
-
-
-
-
-
     Tensor* output_tensor = NULL;
     TensorShape output_shape;
     output_shape.AddDim(v.size());
@@ -254,20 +199,11 @@ class SpmvTacoInputOp : public OpKernel {
     tr0 = timer0.getResult();
 
 
-                // // Create an output tensor of gathered times
-                // Tensor* time_output_tensor0 = NULL;
-                // TensorShape time_output_shape0;
-                // time_output_shape0.AddDim(100);
-                // time_output_shape0.AddDim(1);
-                // OP_REQUIRES_OK(context, context->allocate_output(0, time_output_shape0,
-                //                                              &time_output_tensor0));
-                // auto time_output0 = time_output_tensor0->flat<double>();
-
 
     // Create an output tensor of gathered times
     Tensor* time_output_tensor = NULL;
     TensorShape time_output_shape;
-    time_output_shape.AddDim(100);
+    time_output_shape.AddDim(10);
     time_output_shape.AddDim(1);
     OP_REQUIRES_OK(context, context->allocate_output(1, time_output_shape,
                                                  &time_output_tensor));
@@ -311,49 +247,15 @@ class SpmvTacoInputOp : public OpKernel {
     timer2.start();
 
 
-    std::cout << "before setCSR really " << std::endl;
-    // std::cout << "size.values = " << size.values;
-    // for (taco::storage::TensorStorage::Size::LevelIndexSize levelIndexSize : size.indexSizes) {
-    //   std::cout << "(" << levelIndexSize.ptr << ", " << levelIndexSize.idx << ")" << std::endl;
-    // }
-    // B.insert({0,0}, (double)0.0);
-    // TACO_TIME_REPEAT(B.pack(), 1, tr3)
+    // std::cout << "before setCSR really " << std::endl;
 
-    // std::cout << "size.values = " << size.values;
-    // for (taco::storage::TensorStorage::Size::LevelIndexSize levelIndexSize : size.indexSizes) {
-    //   std::cout << "(" << levelIndexSize.ptr << ", " << levelIndexSize.idx << ")" << std::endl;
-    // }
 
     B.setCSR((double*)values_raw, (int *)level_index0_raw, (int *)level_index1_raw);
-    std::cout << "after setCSR" << B << "done printing" << std::endl;
-    // std::cout << "after " << values_raw << ", " << level_index0_raw << ", " << level_index1_raw << std::endl;
-    // std::cout << "after " << B.getStorage().getValues() << std::endl; //<< ", " << level_index0_raw << ", " << level_index1_raw << std::endl;
+    // std::cout << "after setCSR" << B << "done printing" << std::endl;
 
+    // std::cout << B.getStorage().getLevelIndex(0).ptr << ", " << B.getStorage().getLevelIndex(0).idx << std::endl;
+    // std::cout << B.getStorage().getLevelIndex(1).ptr << ", " << B.getStorage().getLevelIndex(1).idx << std::endl;
 
-    std::cout << B.getStorage().getLevelIndex(0).ptr << ", " << B.getStorage().getLevelIndex(0).idx << std::endl;
-    std::cout << B.getStorage().getLevelIndex(1).ptr << ", " << B.getStorage().getLevelIndex(1).idx << std::endl;
-    // auto size = B.getStorage().getSize();
-    // std::cout << "size.values = " << size.values;
-    // for (taco::storage::TensorStorage::Size::LevelIndexSize levelIndexSize : size.indexSizes) {
-    //   std::cout << "(" << levelIndexSize.ptr << ", " << levelIndexSize.idx << ")" << std::endl;
-    // }
-
-    // std::cout << "dimensions: " << to_string(B.getDimensions())xw << B << std::endl;
-    // std::cout << level_index0_raw[0] << level_index0_raw[1] << level_index0_raw[2] << std::endl;
-    // std::cout << ((int*)level_index0_raw)[0] << ((int*)level_index0_raw)[1] << ((int*)level_index0_raw)[2] << std::endl;
-    // std::cout << level_index1_raw[0] << level_index1_raw[1] << level_index1_raw[2] << std::endl;
-    // std::cout << values_raw[0] << values_raw[1] << values_raw[2] << std::endl;
-
-    // // // Populate the sparse matrix
-    // // std::vector<int> tmp;
-    // // for (int r = 0; r < a_indices_->dim_size(0); r++) {
-    // //     for (int c = 0; c < a_indices_->dim_size(1); c++) {
-    // //       tmp.push_back((int)a_indices(r, c));
-    // //       // std::cout << a_indices(r, c) << ", " << (double)a_values(r) << std::endl;
-    // //     }
-    //     // B.insert(tmp, (double)a_values(r));
-    // //     tmp.clear();
-    // // }
     // // // Populate the vector
     const int N = v.size();
     for (int i = 0; i < N; i++) {
@@ -368,11 +270,11 @@ class SpmvTacoInputOp : public OpKernel {
     // // Pack data as described by the formats
     // std::cout << "packing B" << std::endl;
     // TACO_TIME_REPEAT(B.pack(), 1, tr3)
-    std::cout << "packing c" << std::endl;
+    // std::cout << "packing c" << std::endl;
     TACO_TIME_REPEAT(c.pack(), 1, tr4)
 
     // // Form a tensor-vector multiplication expression
-    std::cout << "setting up index expression" << std::endl;
+    // std::cout << "setting up index expression" << std::endl;
     taco::Var i, j(taco::Var::Sum);
     a(i) = B(i,j) * c(j);
 
@@ -381,18 +283,18 @@ class SpmvTacoInputOp : public OpKernel {
 
 
     // // Compile the expression
-    std::cout << "compiling" << std::endl;
+    // std::cout << "compiling" << std::endl;
     TACO_TIME_REPEAT(result_tensor.compile(), 1, tr5)
     // // std::cout << "compile took " << tr3 << std::endl;
 
     // // Assemble A's indices and numerically compute the result
-    std::cout << "assembling" << std::endl;
+    // std::cout << "assembling" << std::endl;
     TACO_TIME_REPEAT(result_tensor.assemble(), 1, tr6)
     // // std::cout << "assemble took " << tr4 << std::endl;
 
-    std::cout << "computing" << std::endl;
+    // std::cout << "computing" << std::endl;
     TACO_TIME_REPEAT(result_tensor.compute(), 1, tr7)
-    std::cout << "compute took " << tr5 << std::endl;
+    // std::cout << "compute took " << tr5 << std::endl;
 
     double* output_vals = result_tensor.getStorage().getValues();
     size_t nvals = v.size();

@@ -44,13 +44,13 @@ REGISTER_OP("RobLoader")
     .Attr("v_fmt_str: string = \"\"")
 
     // .Output("result: double")
-    // .Output("times: double")
     .Input("v: double")
 
-    .Output("level_index0: double")
-    .Output("level_index1: double")
-    .Output("values: double")
-    .Output("sizes: double")
+    .Output("level_index0: int32") //0
+    .Output("level_index1: int32") //1
+    .Output("values: double") //2
+    .Output("sizes: int32") //3
+    .Output("times: double") //4
 
 
     // .Output("product: double")
@@ -83,7 +83,7 @@ REGISTER_OP("RobLoader")
       // c->set_output(0, c->Matrix(0, 100));
       // c->set_output(1, c->Matrix(1, 100));
       // c->set_output(2, c->Matrix(1, 100));
-      // c->set_output(3, c->Matrix(1, 100));
+      c->set_output(4, c->Matrix(1, 10));
       return Status::OK();
     }); // taken form tensorflow/core/ops/sparse_ops.cc
 // }
@@ -270,13 +270,13 @@ class RobLoaderOp : public OpKernel {
 
 
     // Create an output tensor of gathered times
-    // Tensor* time_output_tensor = NULL;
-    // TensorShape time_output_shape;
-    // time_output_shape.AddDim(100);
-    // time_output_shape.AddDim(1);
-    // OP_REQUIRES_OK(context, context->allocate_output(1, time_output_shape,
-    //                                              &time_output_tensor));
-    // auto time_output = time_output_tensor->flat<double>();
+    Tensor* time_output_tensor = NULL;
+    TensorShape time_output_shape;
+    time_output_shape.AddDim(10);
+    time_output_shape.AddDim(1);
+    OP_REQUIRES_OK(context, context->allocate_output(4, time_output_shape,
+                                                 &time_output_tensor));
+    auto time_output = time_output_tensor->flat<double>();
 
 
 
@@ -336,27 +336,14 @@ class RobLoaderOp : public OpKernel {
     TACO_TIME_REPEAT(B.pack(), 1, tr3)
     TACO_TIME_REPEAT(c.pack(), 1, tr4)
 
-    // Transfer contents of B -> B2
-    // size_t sz = 1000;
-    // double* vals = (double*)malloc(sz);
-    // int* rowPtr  = (int*)malloc(sz);
-    // int* colIdx  = (int*)malloc(sz);
-    // double vals[sz];
-    // int rowPtr[sz];
-    // int colIdx[sz];
+
     double* vals = NULL;
     int* rowPtr = NULL;
     int* colIdx = NULL;
     B.getCSR(&vals, &rowPtr, &colIdx);
-    // std::cout << "middle " << vals << ", " << rowPtr << ", " << colIdx << std::endl;
-
-    // B2.setCSR(vals, rowPtr, colIdx);
-
 
     auto S = B.getStorage();
     auto size =  S.getSize();
-
-
 
 
 
@@ -366,7 +353,7 @@ class RobLoaderOp : public OpKernel {
     output_shape0.AddDim(1);
     OP_REQUIRES_OK(context, context->allocate_output(0, output_shape0,
                                                      &output_tensor0));
-    auto output0 = output_tensor0->flat<double>();
+    auto output0 = output_tensor0->flat<int>();
 
     Tensor* output_tensor1 = NULL;
     TensorShape output_shape1;
@@ -374,7 +361,7 @@ class RobLoaderOp : public OpKernel {
     output_shape1.AddDim(1);
     OP_REQUIRES_OK(context, context->allocate_output(1, output_shape1,
                                                      &output_tensor1));
-    auto output1 = output_tensor1->flat<double>();
+    auto output1 = output_tensor1->flat<int>();
 
     Tensor* output_tensor2 = NULL;
     TensorShape output_shape2;
@@ -390,93 +377,42 @@ class RobLoaderOp : public OpKernel {
     output_shape3.AddDim(1);
     OP_REQUIRES_OK(context, context->allocate_output(3, output_shape3,
                                                      &output_tensor3));
-    auto output3 = output_tensor3->flat<double>();
+    auto output3 = output_tensor3->flat<int>();
 
-    std::cout << "size.indexSizes[1].ptr" << size.indexSizes[1].ptr << std::endl;
+    // std::cout << "size.indexSizes[1].ptr" << size.indexSizes[1].ptr << std::endl;
     for (int i = 0; i < size.indexSizes[1].ptr; i++) {
-      std::cout << rowPtr[i];
+      // std::cout << rowPtr[i];
       output0(i) = rowPtr[i];
     }
-    std::cout << std::endl;
-    std::cout << "size.indexSizes[1].idx" << size.indexSizes[1].idx << std::endl;
+    // std::cout << std::endl;
+    // std::cout << "size.indexSizes[1].idx" << size.indexSizes[1].idx << std::endl;
     for (int i = 0; i < size.indexSizes[1].idx; i++) {
-      std::cout << colIdx[i];
+      // std::cout << colIdx[i];
       output1(i) = colIdx[i];
     }
-    std::cout << std::endl;
-    std::cout << "size.values" << size.values << std::endl;
+    // std::cout << std::endl;
+    // std::cout << "size.values" << size.values << std::endl;
     for (int i = 0; i < size.values; i++) {
-      std::cout << vals[i];
+      // std::cout << vals[i];
       output2(i) = vals[i];
     }
-    std::cout << std::endl;
+    // std::cout << std::endl;
     output3(0) = size.indexSizes[1].ptr;
     output3(1) = size.indexSizes[1].idx;
     output3(2) = size.values;
 
-      // B2.setCSR(tmp_vals, tmp_rowPtr, tmp_colIdx);
-      std::cout << "after copying" << std::endl;
-
-      std::cout << "in loader" << B << std::endl;
-
-    std::cout << "size.values = " << size.values;
-    for (taco::storage::TensorStorage::Size::LevelIndexSize levelIndexSize : size.indexSizes) {
-      std::cout << "(" << levelIndexSize.ptr << ", " << levelIndexSize.idx << ")" << std::endl;
-    }
-
-  // auto S = B2.getStorage();
-  // std::vector<int> denseDim = {B2.getDimensions()[0]};
-  // taco::storage::TensorStorage::LevelIndex d0Index(taco::util::copyToArray(denseDim), nullptr);
-  // taco::storage::TensorStorage::LevelIndex d1Index(rowPtr, colIdx);
-  // S.content->index[0] = d0Index;
-  // S.content->index[1] = d1Index;
-  // S.content->values = vals;
-  std::cout << "after " << vals << ", " << rowPtr << ", " << colIdx << std::endl;
-  //   S.setLevelIndex(0, d0Index);
-  // S.setLevelIndex(1, d1Index);
-  // S.setValues(vals);
-    // free(vals);
-    // free(rowPtr);
-    // free(colIdx);
-    // TACO_TIME_REPEAT(B2.pack(), 1, tr3)
-    // std::cout << "pack" << std::endl;
-
-    // Form a tensor-vector multiplication expression
-    // taco::Var i, j(taco::Var::Sum);
-    // a(i) = B(i,j) * c(j);
-
-    // result_tensor = a;
 
 
+  // std::cout << "after " << vals << ", " << rowPtr << ", " << colIdx << std::endl;
 
-    // // Compile the expression
-    // std::cout << "compiling" << std::endl;
-    // TACO_TIME_REPEAT(result_tensor.compile(), 1, tr5)
-    // // std::cout << "compile took " << tr3 << std::endl;
-
-    // // Assemble A's indices and numerically compute the result
-    // std::cout << "assembling" << std::endl;
-    // TACO_TIME_REPEAT(result_tensor.assemble(), 1, tr6)
-    // // std::cout << "assemble took " << tr4 << std::endl;
-
-    // std::cout << "computing" << std::endl;
-    // TACO_TIME_REPEAT(result_tensor.compute(), 1, tr7)
-    // // std::cout << "compute took " << tr5 << std::endl;
-
-    // std::cout << "assigning output" << std::endl;
-    // double* output_vals = result_tensor.getStorage().getValues();
-    // size_t nvals = a_indices_->dim_size(0);
-    // for (int i = 0; i < nvals; i++) {
-    //   output(i) = output_vals[i];
-    // }
 
     // std::cout << "assigning times" << std::endl;
-    // int counter = 0;
-    // for (auto tr : {tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7}) {
-    //     // std::cout << tr.mean << ", ";
-    //     time_output(counter++) = tr.mean;
-    // }
-    std::cout << "done with everything!" << std::endl;
+    int counter = 0;
+    for (auto tr : {tr0, tr1, tr2, tr3, tr4, tr5, tr6, tr7}) {
+        // std::cout << tr.mean << ", ";
+        time_output(counter++) = tr.mean;
+    }
+    // std::cout << "done with everything!" << std::endl;
   }
 };
 

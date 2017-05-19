@@ -31,10 +31,12 @@ with sess:
     print result, times[:10]
     # print "indices: ", indices, "values: ", values, "dense_shape: ", dense_shape, "b: ", b
     # o1, o2, o3, o4 = sess.run(varmatmul_sparse_module.var_matmul_sparse(indices, values, dense_shape, b, sparse_fmt=[True, False]))
-    o1, o2, o3, o4 = sess.run(loader_module.rob_loader(indices, values, dense_shape, b, sparse_fmt=[True, False]))
+    o1, o2, o3, o4, times_ = loader_module.rob_loader(indices, values, dense_shape, b, sparse_fmt=[True, False])
     # print "1:  ", o1, "2: ", o2, "3: ", o3, "4: ", o4, "b: ", b
-    result, times = sess.run(spmv_taco_input_module.spmv_taco_input(o1, o2, o3, o4, b, sparse_fmt=[True, False]))
-    print result, times[:10]
+    # print times[:10]
+    result_, times2_ = spmv_taco_input_module.spmv_taco_input(o1, o2, o3, o4, b, sparse_fmt=[True, False])
+    result, times, times2 = sess.run([result_, times_, times2_])
+    print result, times, times2
     # result, times = sess.run(varmatmul_sparse_module.var_matmul_sparse(indices, values, dense_shape, b, sparse_fmt=[True, False]))
     
 
