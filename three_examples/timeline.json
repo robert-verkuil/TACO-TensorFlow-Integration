@@ -1,0 +1,206 @@
+{
+    "traceEvents": [
+        {
+            "ph": "M",
+            "args": {
+                "name": "Allocators"
+            },
+            "pid": 0,
+            "name": "process_name"
+        },
+        {
+            "ph": "M",
+            "args": {
+                "name": "/job:localhost/replica:0/task:0/cpu:0 Compute"
+            },
+            "pid": 1,
+            "name": "process_name"
+        },
+        {
+            "ph": "M",
+            "args": {
+                "name": "/job:localhost/replica:0/task:0/cpu:0 Tensors"
+            },
+            "pid": 2,
+            "name": "process_name"
+        },
+        {
+            "name": "NoOp",
+            "args": {
+                "name": "_SOURCE",
+                "op": "NoOp"
+            },
+            "pid": 1,
+            "ts": 1495191314983310,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 4
+        },
+        {
+            "name": "_Arg",
+            "args": {
+                "name": "_arg_Placeholder_7_0_3",
+                "op": "_Arg"
+            },
+            "pid": 1,
+            "ts": 1495191314983340,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 9
+        },
+        {
+            "name": "_Arg",
+            "args": {
+                "name": "_arg_Placeholder_4_0_0",
+                "op": "_Arg"
+            },
+            "pid": 1,
+            "ts": 1495191314983337,
+            "cat": "Op",
+            "tid": 1,
+            "ph": "X",
+            "dur": 13
+        },
+        {
+            "name": "_Arg",
+            "args": {
+                "name": "_arg_Placeholder_8_0_4",
+                "op": "_Arg"
+            },
+            "pid": 1,
+            "ts": 1495191314983340,
+            "cat": "Op",
+            "tid": 2,
+            "ph": "X",
+            "dur": 13
+        },
+        {
+            "name": "_Arg",
+            "args": {
+                "name": "_arg_Placeholder_5_0_1",
+                "op": "_Arg"
+            },
+            "pid": 1,
+            "ts": 1495191314983353,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 3
+        },
+        {
+            "name": "_Arg",
+            "args": {
+                "name": "_arg_Placeholder_6_0_2",
+                "op": "_Arg"
+            },
+            "pid": 1,
+            "ts": 1495191314983348,
+            "cat": "Op",
+            "tid": 3,
+            "ph": "X",
+            "dur": 12
+        },
+        {
+            "name": "SpmvTacoInput",
+            "args": {
+                "input2": "_arg_Placeholder_6_0_2",
+                "input3": "_arg_Placeholder_7_0_3",
+                "input0": "_arg_Placeholder_4_0_0",
+                "input1": "_arg_Placeholder_5_0_1",
+                "name": "SpmvTacoInput",
+                "input4": "_arg_Placeholder_8_0_4",
+                "op": "SpmvTacoInput"
+            },
+            "pid": 1,
+            "ts": 1495191314983364,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 52751
+        },
+        {
+            "name": "_arg_Placeholder_4_0_0",
+            "pid": 1,
+            "ts": 1495191314983350,
+            "cat": "DataFlow",
+            "tid": 1,
+            "ph": "s",
+            "id": 0
+        },
+        {
+            "name": "_arg_Placeholder_4_0_0",
+            "pid": 1,
+            "ts": 1495191314983364,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "t",
+            "id": 0
+        },
+        {
+            "name": "_arg_Placeholder_6_0_2",
+            "pid": 1,
+            "ts": 1495191314983360,
+            "cat": "DataFlow",
+            "tid": 3,
+            "ph": "s",
+            "id": 1
+        },
+        {
+            "name": "_arg_Placeholder_6_0_2",
+            "pid": 1,
+            "ts": 1495191314983364,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "t",
+            "id": 1
+        },
+        {
+            "name": "_arg_Placeholder_8_0_4",
+            "pid": 1,
+            "ts": 1495191314983353,
+            "cat": "DataFlow",
+            "tid": 2,
+            "ph": "s",
+            "id": 2
+        },
+        {
+            "name": "_arg_Placeholder_8_0_4",
+            "pid": 1,
+            "ts": 1495191314983364,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "t",
+            "id": 2
+        },
+        {
+            "name": "_Retval",
+            "args": {
+                "input0": "SpmvTacoInput",
+                "name": "_retval_SpmvTacoInput_0_0",
+                "op": "_Retval"
+            },
+            "pid": 1,
+            "ts": 1495191315036143,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 10
+        },
+        {
+            "name": "_Retval",
+            "args": {
+                "input0": "SpmvTacoInput:1",
+                "name": "_retval_SpmvTacoInput_1_1",
+                "op": "_Retval"
+            },
+            "pid": 1,
+            "ts": 1495191315036162,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 13
+        }
+    ]
+}

@@ -5,6 +5,7 @@ import timeit
 import time
 import sys
 from subprocess import call
+from tensorflow.python.client import timeline
 
 mymatmul_module = tf.load_op_library('/home/ubuntu/tensorflow_with_debug/bazel-bin/tensorflow/core/user_ops/mymatmul.so')
 varmatmul_module = tf.load_op_library('/home/ubuntu/tensorflow_with_debug/bazel-bin/tensorflow/core/user_ops/varmatmul.so')
@@ -135,6 +136,7 @@ def varmatmul_sparse_func(coords, values, dense_shape, v, sparse_fmt=[True, Fals
 def varmatmul_sparse_func2(coords_, values_, dense_shape_, v_, sparse_fmt_=[True, False]):
     # put stuff into a sparsetensor
 
+
     # for sp_fmt in sparsity_format:
     sess = tf.Session('')
     with sess:
@@ -148,15 +150,20 @@ def varmatmul_sparse_func2(coords_, values_, dense_shape_, v_, sparse_fmt_=[True
         # print("in function: ", sparse_fmt_)
         ret = varmatmul_sparse_module.var_matmul_sparse(indices, values, dense_shape, v, sparse_fmt=[True, False])
         result, times = sess.run(ret, feed_dict={indices: coords_, values: values_, dense_shape: dense_shape_, v:v_})
-        return result, times
+
+        return result, times, _
 
 
-def split_func2(coords_, values_, dense_shape_, v_, sparse_fmt_=[True, False]):
+def split_func2_old(coords_, values_, dense_shape_, v_, sparse_fmt_=[True, False]):
     # put stuff into a sparsetensor
 
     # for sp_fmt in sparsity_format:
     sess = tf.Session('')
+    start = time.time()
     with sess:
+        run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+        run_metadata = tf.RunMetadata()
+
         indices = tf.placeholder(tf.int64, [None, 2])
         values = tf.placeholder(tf.double, [None])
         dense_shape = tf.placeholder(tf.int64, [2,])
@@ -169,11 +176,87 @@ def split_func2(coords_, values_, dense_shape_, v_, sparse_fmt_=[True, False]):
         # print("o1 ", o1, ",o2 ", o2, " ,o3 ", o3, " o4, ", o4, ", t ",t)
         # o1_ = tf.Print(o1, [t], '', summarize=10)
         r, t2 = spmv_taco_input_module.spmv_taco_input(o1, o2, o3, o4, v, sparse_fmt=[True, False])
-        result, times, times2 = sess.run([r, t, t2], feed_dict={indices: coords_, values: values_, dense_shape: dense_shape_, v:v_})
+        mid = time.time()
+        result, times, times2 = sess.run([r, t, t2], 
+                                        feed_dict={indices: coords_, values: values_, dense_shape: dense_shape_, v:v_},
+                                        options=run_options, run_metadata=run_metadata)
         # print("loading times: ", times.flatten()[:8], "spmv_taco_input_processor: ", times2.flatten()[:8])
         all_times = list(times.flatten()[:8]) + list(times2.flatten()[:8])
         # print(all_times, len(all_times))
+
+        end = time.time()
+        print("graph construction took {} milliseconds to run".format(mid-start))
+        print("split_func2 took {} milliseconds to run".format(end-start))
+
+
+        # Create the Timeline object, and write it to a json
+        tl = timeline.Timeline(run_metadata.step_stats)
+        ctf = tl.generate_chrome_trace_format()
+        with open('timeline.json', 'w') as f:
+            f.write(ctf)
+
+
         return result, all_times
+
+def split_func2(coords_, values_, dense_shape_, v_, sparse_fmt_=[True, False]):
+    # put stuff into a sparsetensor
+
+    # for sp_fmt in sparsity_format:
+    sess = tf.Session('')
+    start = time.time()
+    with sess:
+        run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+        run_metadata = tf.RunMetadata()
+
+        indices = tf.placeholder(tf.int64, [None, 2])
+        values = tf.placeholder(tf.double, [None])
+        dense_shape = tf.placeholder(tf.int64, [2,])
+        v = tf.placeholder(tf.double, [None, 1])
+        # sparse_fmt = tf.placeholder(tf.double, [1, 2])
+
+        # sparse_t = tf.SparseTensor(indices=indices, values=values, dense_shape=dense_shape)
+        # print("in function: ", sparse_fmt_)
+
+        # for i in range(5):
+        o1_, o2_, o3_, o4_, t = sess.run(loader_module.rob_loader(indices, values, dense_shape, v, sparse_fmt=[True, False]),
+                                        feed_dict={indices: coords_, values: values_, dense_shape: dense_shape_, v:v_})
+        mid = time.time()
+            # print("loading iteration {} took {}".format(i, mid-start))
+            # start = mid
+
+
+        o1 = tf.placeholder(tf.int32)
+        o2 = tf.placeholder(tf.int32)
+        o3 = tf.placeholder(tf.double)
+        o4 = tf.placeholder(tf.int32)
+        v = tf.placeholder(tf.double)
+        ret = spmv_taco_input_module.spmv_taco_input(o1, o2, o3, o4, v, sparse_fmt=[True, False])
+
+
+        for i in range(5):
+            r, t2 = sess.run(ret,
+                                feed_dict={o1: o1_, o2: o2_, o3: o3_, o4: o4_, v:v_},
+                                options=run_options, run_metadata=run_metadata)
+            end = time.time()
+            print("using iteration {} took {}".format(i, end-mid))
+            mid = end
+
+        # print("loading times: ", times.flatten()[:8], "spmv_taco_input_processor: ", times2.flatten()[:8])
+        all_times = list(t.flatten()[:8]) + list(t2.flatten()[:8])
+        # print(all_times, len(all_times))
+
+        # print("graph construction took {} milliseconds to run".format(mid-start))
+        # print("split_func2 took {} milliseconds to run".format(end-mid))
+
+
+        # Create the Timeline object, and write it to a json
+        tl = timeline.Timeline(run_metadata.step_stats)
+        ctf = tl.generate_chrome_trace_format()
+        with open('timeline.json', 'w') as f:
+            f.write(ctf)
+
+
+        return r, all_times, mid
 
 
 # def my_noop_func(sparse_m, v, sparse_fmt):
@@ -203,7 +286,7 @@ functions = {
 
     # Category: my stuff
     # "varmatmul_sparse_func" : varmatmul_sparse_func,
-    # "varmatmul_sparse_func2" : varmatmul_sparse_func2,
+    "varmatmul_sparse_func2" : varmatmul_sparse_func2,
     "split_func2" : split_func2,
 # "my_noop_func" : my_noop_func,
 
@@ -219,7 +302,8 @@ sizes = (
     # [1000,1000],
     [2000,2000],
     # [4000,4000],
-    [10000, 10000],
+    # [10000, 10000],
+    # [30000, 30000],
     )
 
 # in the range [0,1]
@@ -277,7 +361,9 @@ def run_one_test(fname, m, n, sparsity, sparse_pattern, check, sparse_fmt_name):
 
     if sparse_fmt:
         # print(sparse_fmt)
-        result, times = f(coords, vals, dense_shape, v, sparse_fmt)
+        print("started test")
+        result, times, mid = f(coords, vals, dense_shape, v, sparse_fmt)
+        print("finished test")
     else:
         result = f(coords, vals, dense_shape, v)
     after_computation = time.time()
@@ -287,19 +373,26 @@ def run_one_test(fname, m, n, sparsity, sparse_pattern, check, sparse_fmt_name):
         for t in times.flatten()[:8]:
             print("{}, ".format(t), end='')
         print(", "*8, end='')
+        print("{}, ".format(after_computation-after_generation), end="")
+        print("{}".format(0), end="\n")
     elif ("split" in fname):
-        print(len(times))
+        # print(len(times))
         for t in times[:16]:
             print("{}, ".format(t), end='')
+        print("{}, ".format(mid-after_generation), end="")
+        print("{}".format(after_computation-mid), end="\n")
     else:
         print(", "*16, end='')
+        print("{}, ".format(after_computation-after_generation), end="")
+        print("{}".format(0), end="\n")
 
-    print("{}".format(after_computation-after_generation), end="\n")
 
     if ('noop_func' not in fname) and check:
         good_result = tf_sparse_matmul_func(coords, vals, dense_shape, v)
-        # print(result, good_result),
-        np.testing.assert_array_equal(result, good_result)
+        # print(result, good_result)
+        # np.set_printoptions(threshold=np.nan)
+        # print("allclose?: ", np.allclose(result, good_result))
+        np.testing.assert_allclose(result, good_result)
 
 
 def call_run_one_test(options):
@@ -314,7 +407,7 @@ def test_all(check):
     global gen_sparse_matrix
     print("function_type, m, n, sparsity, sparsity_pattern, generation_time, ", end='')
     print("TF_setup, tacotensor_init, tacotensor_insert, B_pack, c_pack, t_compile, t_assemble, t_compute, ", end='')
-    print("TF_setup2, tacotensor_init2, tacotensor_insert2, B_pack2, c_pack2, t_compile2, t_assemble2, t_compute2, computation_time")
+    print("TF_setup2, tacotensor_init2, tacotensor_insert2, B_pack2, c_pack2, t_compile2, t_assemble2, t_compute2, computation_time, computation_time2")
     for fname, f in functions.iteritems():
         for (m, n) in sizes:
             for sparsity in sparsities:
@@ -335,11 +428,11 @@ if __name__ == '__main__':
               "If test_one, then you need to specify all the args." + 
               "(They are ommitted here to avoid having to always change two code areas...")
     if sys.argv[1] == "test_all":
-        test_all(False)
+        test_all(True)
         time.sleep(0.3)
         sys.stdout.flush()
     elif sys.argv[1] == "test_one":
-        # print("about to call one test with args = ", *sys.argv[2:9])
+        print("about to call one test with args = ", *sys.argv[2:9])
         fname           = sys.argv[2]
         m               = int(sys.argv[3])
         n               = int(sys.argv[4])

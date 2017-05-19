@@ -273,7 +273,7 @@ class SpmvTacoInputOp : public OpKernel {
     // TACO_TIME_REPEAT(B.pack(), 1, tr3)
     // std::cout << "packing c" << std::endl;
     // TACO_TIME_REPEAT(c.pack(), 1, tr4)
-    std::cout << c << std::endl;
+    // std::cout << c << std::endl;
 
     // // Form a tensor-vector multiplication expression
     // std::cout << "setting up index expression" << std::endl;
