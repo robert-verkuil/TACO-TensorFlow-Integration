@@ -1,0 +1,12 @@
+function_type, m, n, sparsity, sparsity_pattern, generation_time, TF_setup, tacotensor_init, tacotensor_insert, B_pack, c_pack, t_compile, t_assemble, t_compute, computation_time
+tf_noop_func2, 2000, 2000, 0.01, ratio_based, 0.0686340332031, , , , , , , , , 0.00774192810059
+tf_noop_func2, 2000, 2000, 0.01, n_per_line, 0.120651006699, , , , , , , , , 0.00796413421631
+tf_noop_func2, 2000, 2000, 0.03, ratio_based, 0.070515871048, , , , , , , , , 0.00772190093994
+tf_noop_func2, 2000, 2000, 0.03, n_per_line, 0.121870994568, , , , , , , , , 0.00768995285034
+tf_noop_func2, 2000, 2000, 0.05, ratio_based, 0.0719549655914, , , , , , , , , 0.00837588310242
+tf_noop_func2, 2000, 2000, 0.05, n_per_line, 0.123779058456, , , , , , , , , 0.00799703598022
+tf_noop_func2, 2000, 2000, 0.75, ratio_based, 0.0804150104523, , , , , , , , , 0.00811886787415
+tf_noop_func2, 2000, 2000, 0.75, n_per_line, 0.131610870361, , , , , , , , , 0.0081570148468
+tf_noop_func2, 2000, 2000, 1.0, ratio_based, 0.0652270317078, , , , , , , , , 0.00777888298035
+tf_noop_func2, 2000, 2000, 1.0, n_per_line, 0.110786914825, , , , , , , , , 0.0078730583190
+

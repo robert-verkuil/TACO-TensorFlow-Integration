@@ -61,9 +61,17 @@ def TfSpMV(tns_file="", dense_shape = []):
 		# load tns_file into tf.SparseTensor
 		indices, values = loadTNS(tns_file, dense_shape, True)
 		print("len(indices)=", len(indices), "len(values)=", len(values), "dense_shape=", dense_shape)
-		sparse_m = tf.SparseTensor(indices=indices, values=values, dense_shape=dense_shape)
-		v = np.random.randint(10, size=(dense_shape[-1], 1))
-		tf.sparse_tensor_dense_matmul(sparse_m, tf.cast(v, tf.int32)).eval()
+		sparse_m = tf.SparseTensor(indices=tf.cast(indices, tf.int64), values=tf.cast(values, tf.int64), dense_shape=dense_shape)
+		cast_sparse_m = tf.cast(sparse_m, tf.int64)
+		# psparse_m = tf.Print(sparse_m, [], "got sparse_m")
+		reshaped_shape = [np.product(dense_shape[:-1]), dense_shape[-1]]
+		print(reshaped_shape)
+		reshaped_sparse_m = tf.sparse_reshape(cast_sparse_m, reshaped_shape) 
+		# preshaped_sparse_m = tf.Print(reshaped_sparse_m, [], "reshaped sparse_m")
+		v = np.random.randint(10, size=(dense_shape[-1], 1)).astype(np.int64)
+		print("length of v = ", (dense_shape[-1], 1))
+		print("about to perform matmul")
+		tf.sparse_tensor_dense_matmul(reshaped_sparse_m, v).eval()
 
 
 def TestAllTaco(use_taco):
@@ -72,8 +80,8 @@ def TestAllTaco(use_taco):
 	print("tns file, A_fmt, B_fmt, c_fmt, A_dim, B_dim, c_dim, B_pack, c_pack, t_compile, t_assemble, t_compute")
 	for tns_file, order, dense_shape, fmt in [
 							# ("nips.tns", 4, [2482, 2862, 14036, 17], [False, False, False, False]), 
-							("nipsTrivial.tns", 2, [5, 2158], [False, False]), 
-							("nips2D.tns", 2, [2483, 2863], [False, False]), 
+							# ("nipsTrivial.tns", 2, [5, 2158], [False, False]), 
+							# ("nips2D.tns", 2, [2483, 2863], [False, False]), 
 							("vast2D.tns", 2, [165427, 11374], [False, False]), 
 							# ("delicious-4d.tns", 4)
 							]:

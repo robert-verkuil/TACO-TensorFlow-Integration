@@ -16,6 +16,13 @@ tf_custom_op_library(
 )
 
 tf_custom_op_library(
+    name = "noop.so",
+    srcs = ["noop.cc"],
+    deps = [
+    ],
+)
+
+tf_custom_op_library(
     name = "zero_out.so",
     srcs = ["zero_out.cc"],
     deps = [
@@ -42,6 +49,30 @@ tf_custom_op_library(
 tf_custom_op_library(
     name = "varmatmul.so",
     srcs = ["varmatmul/varmatmul.cc"],
+    deps = [
+        ":taco"
+    ],
+)
+
+tf_custom_op_library(
+    name = "varmatmul_sparse.so",
+    srcs = ["varmatmul/varmatmul_sparse.cc"],
+    deps = [
+        ":taco"
+    ],
+)
+
+tf_custom_op_library(
+    name = "loader.so",
+    srcs = ["varmatmul/loader.cc"],
+    deps = [
+        ":taco"
+    ],
+)
+
+tf_custom_op_library(
+    name = "spmv_taco_input.so",
+    srcs = ["varmatmul/spmv_taco_input.cc"],
     deps = [
         ":taco"
     ],

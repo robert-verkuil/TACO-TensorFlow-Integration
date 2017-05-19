@@ -6,32 +6,9 @@ import time
 import sys
 from subprocess import call
 
-mymatmul_module = tf.load_op_library('/home/ubuntu/tensorflow/bazel-bin/tensorflow/core/user_ops/mymatmul.so')
-varmatmul_module = tf.load_op_library('/home/ubuntu/tensorflow/bazel-bin/tensorflow/core/user_ops/varmatmul.so')
-
-# print(*(0,1,2,3))
-
-# # Function de-arger/anonymizer
-# def anon(f, *arg):
-#     def _anon():
-#         f(*arg)
-#     return _anon
-
-# print "no_tf: ", timeit.timeit(
-#     anon(trivial, False, tf.my_matmul),
-#     number=20)
-
-# print "mine: ", timeit.timeit(
-#     anon(trivial, False, tf.my_matmul),
-#     number=20)
-# print "normal: ", timeit.timeit(
-#     anon(trivial, False, mymatmul_module.my_matmul),
-#     number=20)
-
-    # .Attr("sparse_fmt: list(bool) = [true, true]")
-    # .Attr("tns_file: string = \"\"")
-    # .Attr("v_fmt_str: string = \"\"")
-
+mymatmul_module = tf.load_op_library('/home/ubuntu/tensorflow_with_debug/bazel-bin/tensorflow/core/user_ops/mymatmul.so')
+varmatmul_module = tf.load_op_library('/home/ubuntu/tensorflow_with_debug/bazel-bin/tensorflow/core/user_ops/varmatmul.so')
+noop_module = tf.load_op_library('/home/ubuntu/tensorflow_with_debug/bazel-bin/tensorflow/core/user_ops/noop.so')
 
 # def generate_sparse_m_and_dense_v_indices_and_values(m, n, sparsity, sparse_pattern):
 
@@ -68,6 +45,7 @@ def generate_sparse_m_and_dense_v(m, n, sparsity, sparse_pattern):
 
     return W_rand, x_rand
 
+
 # The plan:
 # generate_sparse_m_and_dense_v
 # then using that thingy, run multiple tests:
@@ -84,24 +62,46 @@ def generate_sparse_m_and_dense_v(m, n, sparsity, sparse_pattern):
 def numpy_matmul_func(sparse_m, v):
     return np.dot(sparse_m, v)
 
-
-# used to get a 
 def tf_noop_func(sparse_m, v):
     with tf.Session(''):
-        sparse_m = tf.identity(sparse_m)
-        # v = tf.identity(v)
-        sparse_m.eval()
-        # v.eval()
+        sz1 = tf.size(sparse_m).eval()
+        # sz1 = tf.matmul(sparse_m, v).eval()
+        return sz1
+
+def tf_noop_func_feed(sparse_m_, v_):
+    sess = tf.Session('')
+    with sess:
+        sparse_m = tf.placeholder(tf.double)
+        v = tf.placeholder(tf.double)
+
+        ret = tf.size(sparse_m)
+        result = sess.run(ret, feed_dict={sparse_m: sparse_m_, v:v_})
+        return result
+
+# def tf_noop_func2(sparse_m, v):
+#     with tf.Session(''):
+#         return tf.matmul([[0],[0]], [[0]]).eval()
 
 def tf_matmul_func(sparse_m, v):
     with tf.Session(''):
+        # config=tf.ConfigProto(intra_op_parallelism_threads=1)):
         return tf.matmul(sparse_m, v).eval()
 
-def tf_matmul_func2(sparse_m, v):
-    NUM_THREADS = 16
-    with tf.Session(
-        config=tf.ConfigProto(intra_op_parallelism_threads=NUM_THREADS)):
-        return tf.matmul(sparse_m, v).eval()
+def tf_matmul_func_feed(sparse_m_, v_):
+    sess = tf.Session('')
+    with sess:
+        sparse_m = tf.placeholder(tf.double)
+        v = tf.placeholder(tf.double)
+
+        ret = tf.matmul(sparse_m, v)
+        result = sess.run(ret, feed_dict={sparse_m: sparse_m_, v:v_})
+        return result
+
+# def tf_matmul_func2(sparse_m, v):
+#     NUM_THREADS = 16
+#     with tf.Session(
+#         config=tf.ConfigProto(intra_op_parallelism_threads=NUM_THREADS)):
+#         return tf.matmul(sparse_m, v).eval()
 
 def tf_sparse_matmul_func(sparse_m, v):
     # put stuff into a sparsetensor
@@ -116,14 +116,44 @@ def tf_sparse_matmul_func(sparse_m, v):
         # print("result shape = ", result.shape)
         return result, time_to_ignore
 
+# def tf_sparse_matmul_func_feed(sparse_m_, v_):
+#     sess = tf.Session('')
+#     with sess:
+#         sparse_m = tf.placeholder(tf.double)
+#         v = tf.placeholder(tf.double)
+
+#         ret = tf.sparse_tensor_dense_matmul(sparse_m, v)
+#         result = sess.run(ret, feed_dict={sparse_m: sparse_m_, v:v_})
+#         return result
+
 def tf_matmul_with_sparsity_func(sparse_m, v):
     with tf.Session(''):
         return tf.matmul(sparse_m, v, a_is_sparse=True).eval()
+
+def tf_matmul_with_sparsity_func_feed(sparse_m_, v_):
+    sess = tf.Session('')
+    with sess:
+        sparse_m = tf.placeholder(tf.double)
+        v = tf.placeholder(tf.double)
+
+        ret = tf.matmul(sparse_m, v, a_is_sparse=True)
+        result = sess.run(ret, feed_dict={sparse_m: sparse_m_, v:v_})
+        return result
     
 def my_matmul_func(sparse_m, v):
     # for sp_fmt in sparsity_format:
     with tf.Session(''):
         return mymatmul_module.my_matmul(sparse_m, v).eval()
+
+def my_matmul_func_feed(sparse_m_, v_):
+    sess = tf.Session('')
+    with sess:
+        sparse_m = tf.placeholder(tf.double)
+        v = tf.placeholder(tf.double)
+
+        ret = mymatmul_module.my_matmul(sparse_m, v)
+        result = sess.run(ret, feed_dict={sparse_m: sparse_m_, v:v_})
+        return result
 
 def varmatmul_func(sparse_m, v, sparse_fmt=[True, True]):
     # for sp_fmt in sparsity_format:
@@ -132,45 +162,92 @@ def varmatmul_func(sparse_m, v, sparse_fmt=[True, True]):
         result, times = sess.run(varmatmul_module.var_matmul(sparse_m, v, sparse_fmt=sparse_fmt))
         return result, times
 
+def varmatmul_func_feed(sparse_m_, v_, sparse_fmt_=[True, True]):
+    sess = tf.Session('')
+    with sess:
+        sparse_m = tf.placeholder(tf.double)
+        v = tf.placeholder(tf.double)
+
+        ret = varmatmul_module.var_matmul(sparse_m, v, sparse_fmt=sparse_fmt_)
+        result, times = sess.run(ret, feed_dict={sparse_m: sparse_m_, v:v_})
+        return result, times
+
+def my_noop_func(sparse_m, v):
+    # for sp_fmt in sparsity_format:
+    with tf.Session(''):
+        result = noop_module.noop(sparse_m, v).eval()
+        # result = mymatmul_module.my_matmul(sparse_m, v).eval()
+        return result
+
+def my_noop_func_feed(sparse_m_, v_):
+    sess = tf.Session('')
+    with sess:
+        sparse_m = tf.placeholder(tf.double)
+        v = tf.placeholder(tf.double)
+
+        ret = noop_module.noop(sparse_m, v)
+        result = sess.run(ret, feed_dict={sparse_m: sparse_m_, v:v_})
+        return result
+
+
 functions = {
-    # ref
+    # # Category: Baseline
     # "numpy_matmul_func" : numpy_matmul_func,
     # "tf_noop_func" : tf_noop_func,
 
-    # tf stuff
+    # # Category: tf stuff
     # "tf_matmul_func" : tf_matmul_func,
-    # "tf_matmul_func2" : tf_matmul_func2,
-    "tf_sparse_matmul_func_bare" : tf_sparse_matmul_func,
+    # "tf_sparse_matmul_func_bare" : tf_sparse_matmul_func,
     # "tf_matmul_with_sparsity_func" : tf_matmul_with_sparsity_func,
 
-    # # my stuff
+    # # Category: my stuff
     # "my_matmul_func" : my_matmul_func,
     # "varmatmul_func" : varmatmul_func,
+                                                    # "my_noop_func" : my_noop_func,
+
+
+    # Category: Baseline
+    "numpy_matmul_func" : numpy_matmul_func,
+    "tf_noop_func_feed" : tf_noop_func_feed,
+
+    # Category: tf stuff
+    "tf_matmul_func_feed" : tf_matmul_func_feed,
+    # "tf_sparse_matmul_func_bare_feed" : tf_sparse_matmul_func_bare_feed,
+    "tf_matmul_with_sparsity_func_feed" : tf_matmul_with_sparsity_func_feed,
+
+    # Category: my stuff
+    "my_matmul_func_feed" : my_matmul_func_feed,
+    "varmatmul_func_feed" : varmatmul_func_feed,
     }
 
 sizes = (
-    [50, 50],
-    [100, 100],
-        [500, 500],
-        [1000,1000],
-        [2000,2000],
+    # [1,1],
+    # [50, 50],
+    # [100, 100],
+    # [500, 500],
+    # [1000,1000],
+    [2000,2000],
     # [4000,4000],
     # [10000, 10000],
     )
 
 # in the range [0,1]
 sparsities = (
+        # 0.00001,
         0.01,
+        0.02,
         0.03,
+        0.04,
         0.05,
+        0.06,
+        0.07,
         0.1,
         0.15,
         0.2,
-        0.3,
-        # 0.4,
-        0.5,
-        0.75,
-        1,
+        # 0.3,
+        # 0.5,
+        # 0.75,
+        # 1,
     )
 
 # Which sparse format mymatmul will use
@@ -185,15 +262,9 @@ sparsity_format = {
 
 sparsity_pattern = (
     "ratio_based",
-    "n_per_line",
+    # "n_per_line",
     )
 
-# # A quick tester to check for bugs with the very difficult stuff.
-# # For use before running a huge suite of tests.
-# def quick_test:
-#     for f in functions:
-#         for sparse_format in sparsity_pattern:
-#             m, n = 10000, 10000
 
 
 # Right now I'm relying on the secret invariant that only varmatmul_func
@@ -206,13 +277,15 @@ def run_one_test(fname, m, n, sparsity, sparse_pattern, check, sparse_fmt_name):
     # We split appart the print because f(sparse_m, v) has the side effect of printing some data
     # And we want the newline to come after that printed stuff
     print("{}, {}, {}, {}, {}, ".format(str(fname), str(m), str(n), str(sparsity), sparse_pattern), end='')
+
+    # Handling for dense comparisons
     start = time.time()
     sparse_m, v = generate_sparse_m_and_dense_v(m, n, sparsity, sparse_pattern)
     after_generation = time.time()
     print("{}, ".format(after_generation-start), end="")
 
 
-    if sparse_fmt:
+    if "varmatmul" in fname:
         result, times = f(sparse_m, v, sparse_fmt)
     elif f == tf_sparse_matmul_func:
         result, time_to_ignore = f(sparse_m, v)
@@ -222,7 +295,7 @@ def run_one_test(fname, m, n, sparsity, sparse_pattern, check, sparse_fmt_name):
     after_computation = time.time()
 
     # We might need padding for the stuff spit out by the function
-    if f != varmatmul_func:
+    if "varmatmul" not in fname:
         print(", "*8, end='')
     else:
         for t in times.flatten()[:8]:
@@ -235,15 +308,13 @@ def run_one_test(fname, m, n, sparsity, sparse_pattern, check, sparse_fmt_name):
 
     print('', end='\n')
 
-    if f != tf_noop_func and check:
+    if 'noop' not in fname and check:
         good_result = np.dot(sparse_m, v)
         np.testing.assert_array_equal(result, good_result)
 
 
-
-
 def call_run_one_test(options):
-    time.sleep(0.5)
+    time.sleep(0.1)
     call(["python", "trivial.py", "test_one"] + [str(opt) for opt in options])
 
 
@@ -256,7 +327,7 @@ def test_all(check):
         for (m, n) in sizes:
             for sparsity in sparsities:
                 for sparse_pattern in sparsity_pattern:
-                    if f == varmatmul_func:
+                    if "varmatmul" in fname:
                         for sparse_fmt_name, _ in sparsity_format.iteritems():
                             if sparse_fmt_name != -1:
                                 call_run_one_test([fname, m, n, sparsity, sparse_pattern, check, sparse_fmt_name])
@@ -272,7 +343,7 @@ if __name__ == '__main__':
               "If test_one, then you need to specify all the args." + 
               "(They are ommitted here to avoid having to always change two code areas...")
     if sys.argv[1] == "test_all":
-        test_all(True)
+        test_all(False)
     elif sys.argv[1] == "test_one":
         # print("about to call one test with args = ", *sys.argv[2:9])
         fname           = sys.argv[2]
