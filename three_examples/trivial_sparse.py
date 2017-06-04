@@ -135,7 +135,7 @@ def tf_sparse_matmul_func5(coords_, values_, dense_shape_, v_):
 
     # put stuff into a sparsetensor
     start = time.time()
-    sess = tf.Session('')
+    sess = tf.Session(config=tf.ConfigProto(intra_op_parallelism_threads=2, inter_op_parallelism_threads=2))
     with sess:
         indices = tf.placeholder(tf.int64, [None, 2])
         values = tf.placeholder(tf.double, [None])
@@ -325,7 +325,7 @@ functions = {
     # Category: my stuff
     # "varmatmul_sparse_func" : varmatmul_sparse_func,
     # "varmatmul_sparse_func2" : varmatmul_sparse_func2,
-    # "split_func2" : split_func2,
+    "split_func2" : split_func2,
 # "my_noop_func" : my_noop_func,
 
     # Category: split stuff
@@ -336,24 +336,59 @@ sizes = (
     # [1,1],
     # [50, 50],
     # [100, 100],
+    # [250, 250],
     # [500, 500],
     # [1000,1000],
     # [2000,2000],
     # [4000,4000],
-    [10000, 10000],
+    # [7000,7000],
+    # [10000, 10000],
+    # [20000, 20000],
     # [30000, 30000],
+
+
+    [500, 500],
+    [700, 700],
+    [800, 800],
+    [900, 900],
+    [1000,1000],
+    [1200,1200],
+    [1400,1400],
+    [1600,1600],
+    [1800,1800],
+    [2000,2000],
+    [2400,2400],
+    [2800,2800],
+    [3200,3200],
+    [3600,3600],
+    [4000,4000],
+    [4800,4800],
+    [5600,5600],
+    [6400,6400],
+    [7200,7000],
+    [8000,8000],
+    [8800,8800],
+    [9600,9600],
+    [10400,10400],
+    [11200,11200],
+    [12000,12000],
+    [12800,12800],
+    [13600, 13600],
+    [14400, 14400],
+    [15200, 15200],
+    [16000, 16000],
     )
 
 # in the range [0,1]
 sparsities = (
         # 0.00001,
-        0.01,
-        0.02,
-        0.03,
-        0.04,
-        0.05,
+        # 0.01,
+        # 0.02,
+        # 0.03,
+        # 0.04,
+        # 0.05,
         0.06,
-        0.07,
+        # 0.07,
         # 0.1,
         # 0.15,
         # 0.2,
@@ -405,6 +440,7 @@ def run_one_test(fname, m, n, sparsity, sparse_pattern, check, sparse_fmt_name):
     else:
         result, mid = f(coords, vals, dense_shape, v)
     after_computation = time.time()
+    # print('reported times were {}, {}, {}, {}'.format(start, after_generation, mid, after_computation))
 
 
 
@@ -435,12 +471,12 @@ def run_one_test(fname, m, n, sparsity, sparse_pattern, check, sparse_fmt_name):
         print("{}".format(memory_usage), end="\n")
 
 
-    if ('noop_func' not in fname) and check:
-        good_result = tf_sparse_matmul_func(coords, vals, dense_shape, v)
+    # if ('noop_func' not in fname) and check:
+    good_result = tf_sparse_matmul_func(coords, vals, dense_shape, v)
         # print(result, good_result)
         # np.set_printoptions(threshold=np.nan)
         # print("allclose?: ", np.allclose(result, good_result))
-        np.testing.assert_allclose(result, good_result)
+    np.testing.assert_allclose(result, good_result)
 
 
 def call_run_one_test(options):

@@ -31,7 +31,7 @@
                 "op": "NoOp"
             },
             "pid": 1,
-            "ts": 1495204329797865,
+            "ts": 1495577194747662,
             "cat": "Op",
             "tid": 0,
             "ph": "X",
@@ -44,11 +44,11 @@
                 "op": "_Arg"
             },
             "pid": 1,
-            "ts": 1495204329797909,
+            "ts": 1495577194747707,
             "cat": "Op",
             "tid": 0,
             "ph": "X",
-            "dur": 9
+            "dur": 7
         },
         {
             "name": "_Arg",
@@ -57,35 +57,9 @@
                 "op": "_Arg"
             },
             "pid": 1,
-            "ts": 1495204329797904,
+            "ts": 1495577194747701,
             "cat": "Op",
             "tid": 1,
-            "ph": "X",
-            "dur": 17
-        },
-        {
-            "name": "_Arg",
-            "args": {
-                "name": "_arg_Placeholder_5_0_1",
-                "op": "_Arg"
-            },
-            "pid": 1,
-            "ts": 1495204329797920,
-            "cat": "Op",
-            "tid": 0,
-            "ph": "X",
-            "dur": 10
-        },
-        {
-            "name": "_Arg",
-            "args": {
-                "name": "_arg_Placeholder_7_0_3",
-                "op": "_Arg"
-            },
-            "pid": 1,
-            "ts": 1495204329797914,
-            "cat": "Op",
-            "tid": 2,
             "ph": "X",
             "dur": 17
         },
@@ -96,11 +70,37 @@
                 "op": "_Arg"
             },
             "pid": 1,
-            "ts": 1495204329797919,
+            "ts": 1495577194747714,
+            "cat": "Op",
+            "tid": 2,
+            "ph": "X",
+            "dur": 15
+        },
+        {
+            "name": "_Arg",
+            "args": {
+                "name": "_arg_Placeholder_7_0_3",
+                "op": "_Arg"
+            },
+            "pid": 1,
+            "ts": 1495577194747713,
             "cat": "Op",
             "tid": 3,
             "ph": "X",
-            "dur": 15
+            "dur": 11
+        },
+        {
+            "name": "_Arg",
+            "args": {
+                "name": "_arg_Placeholder_5_0_1",
+                "op": "_Arg"
+            },
+            "pid": 1,
+            "ts": 1495577194747716,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 4
         },
         {
             "name": "SpmvTacoInput",
@@ -114,25 +114,25 @@
                 "op": "SpmvTacoInput"
             },
             "pid": 1,
-            "ts": 1495204329797958,
+            "ts": 1495577194747738,
             "cat": "Op",
             "tid": 0,
             "ph": "X",
-            "dur": 84511
+            "dur": 126650
         },
         {
             "name": "_arg_Placeholder_6_0_2",
             "pid": 1,
-            "ts": 1495204329797934,
+            "ts": 1495577194747729,
             "cat": "DataFlow",
-            "tid": 3,
+            "tid": 2,
             "ph": "s",
             "id": 0
         },
         {
             "name": "_arg_Placeholder_6_0_2",
             "pid": 1,
-            "ts": 1495204329797958,
+            "ts": 1495577194747738,
             "cat": "DataFlow",
             "tid": 0,
             "ph": "t",
@@ -141,16 +141,16 @@
         {
             "name": "_arg_Placeholder_7_0_3",
             "pid": 1,
-            "ts": 1495204329797931,
+            "ts": 1495577194747724,
             "cat": "DataFlow",
-            "tid": 2,
+            "tid": 3,
             "ph": "s",
             "id": 1
         },
         {
             "name": "_arg_Placeholder_7_0_3",
             "pid": 1,
-            "ts": 1495204329797958,
+            "ts": 1495577194747738,
             "cat": "DataFlow",
             "tid": 0,
             "ph": "t",
@@ -159,7 +159,7 @@
         {
             "name": "_arg_Placeholder_8_0_4",
             "pid": 1,
-            "ts": 1495204329797921,
+            "ts": 1495577194747718,
             "cat": "DataFlow",
             "tid": 1,
             "ph": "s",
@@ -168,7 +168,7 @@
         {
             "name": "_arg_Placeholder_8_0_4",
             "pid": 1,
-            "ts": 1495204329797958,
+            "ts": 1495577194747738,
             "cat": "DataFlow",
             "tid": 0,
             "ph": "t",
@@ -182,11 +182,11 @@
                 "op": "_Retval"
             },
             "pid": 1,
-            "ts": 1495204329882507,
+            "ts": 1495577194874440,
             "cat": "Op",
             "tid": 0,
             "ph": "X",
-            "dur": 15
+            "dur": 13
         },
         {
             "name": "_Retval",
@@ -196,11 +196,11 @@
                 "op": "_Retval"
             },
             "pid": 1,
-            "ts": 1495204329882527,
+            "ts": 1495577194874464,
             "cat": "Op",
             "tid": 0,
             "ph": "X",
-            "dur": 48
+            "dur": 57
         }
     ]
 }

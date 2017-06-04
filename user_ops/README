@@ -1,0 +1,50 @@
+Sorry for the messiness of everything in here!
+
+Useful Links:
+https://www.tensorflow.org/extend/adding_an_op
+
+General Info:
+Robert Verkuil
+Spring 2017
+UROP - TensorFlow-Taco Integration
+
+Project Layout:
+
+Used for loading taco into custom operations:
+include/
+libtaco.a
+libtaco_prob_not_parallel.a
+
+Used for doing extremely simple TensorFlow custom Operations
+hello_world_op
+
+My operations:
+mymatmul.cc
+mymatmul_grad.cc    -> the gradient of matmul used in backpropagation
+_mymatmul_grad.py	-> used to set mymatmul_grad as gradient of mymatmul
+mymatmul_grad_tests.py 		->  tests for gradient
+mymatmul.py 				->  simple example running in TensorFlow
+noop.cc 			-> Simplest TensorFlow custom operation that does nothing
+
+// Contains the python scripts used the generate the final numbers
+In three_examples:
+trivial.py			->  used to gather results using tensorflow and custom operations that take in dense data
+trivial_sparse.py	->  used to gather results using tensorflow and custom operations that take in sparse data
+
+// Contains the operations used in the final analysis
+In varmatmul: custom op definitions used to gather results using tensorflow and custom operations that take in sparse data
+varmatmul.cc/.py			-> more advanced version of mymatmul, allows specification of sparse-matrix and vector formats, takes in dense data
+varmatmul_sparse.cc/.py		-> same as above but takes in sparse data
+
+loader.cc 				->  Custom operation that takes in coordinate data and outputs the underlying taco 1D tensors
+spmv_taco_input.cc 		->  Custom operation that takes in underlying ttaco tensors and does the SpMV
+
+2D_omit.py			-> experiment to convert > 2D tns files to 2D tns files
+2D_sorted_check.py	-> experiment to convert > 2D tns files to 2D tns files
+
+In traces:
+Images gathered using pprof callgraph capture
+
+
+Items that did not make the cut into the final writeup
+hello_world      ->     used to experiment with static and dynamic libraries
